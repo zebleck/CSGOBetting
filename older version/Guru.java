@@ -1,7 +1,10 @@
-package com.Bettingguru;
+package com.BettingGuru;
 
 import javax.swing.*;
 
+/**
+ * Created by Fabian on 05.02.2015.
+ */
 public class Guru {
     public static void main(String[] args) {
 

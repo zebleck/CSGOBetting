@@ -1,4 +1,4 @@
-package com.Bettingguru;
+package com.BettingGuru;
 
 /*
 	Displays data found on http://csgolounge.com in an organized and presentable way
@@ -6,43 +6,38 @@ package com.Bettingguru;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import javax.swing.*;
-
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.IOException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 
 public class DrawPanel extends JPanel {
-	
-	private ArrayList<VsPanel> vsPanels;
-	
+
     public DrawPanel() {
         setLayout(new GridBagLayout());
         setBackground(new Color(230, 230, 230));
 
-        vsPanels = new ArrayList<VsPanel>();
-        
         init();
     }
 
     private void init() {
-    	GridBagConstraints c = new GridBagConstraints();
-    	
-	    		
-    	try {
-    		Document csglInfo = Jsoup.connect("http://csgolounge.com/").get();
-	        Elements matches = csglInfo.select(".matchmain");
+
+        GridBagConstraints c = new GridBagConstraints();
+
+        try {
+            Document csglInfo = Jsoup.connect("http://csgolounge.com/").get();
+            Elements matches = csglInfo.select(".matchmain");
 
 
-	        for (int i = 0; i < matches.size(); i++) {
+            for (int i = 0; i < matches.size(); i++) {
 
                 String t1Name = matches.get(i).select(".teamtext b").get(0).text() + " (" + matches.get(i).select(".teamtext i").get(0).text() + ")";
                 String t2Name = matches.get(i).select(".teamtext b").get(1).text() + " (" + matches.get(i).select(".teamtext i").get(1).text() + ")";
@@ -79,15 +74,25 @@ public class DrawPanel extends JPanel {
                 }
 
 
-                VsPanel vsPanel = new VsPanel(t1Name + "vs" + t2Name, "<html><u>VS</u></html>", i, fileName);
+                JPanel vsPanel = new JPanel();
+                JLabel vsLabel = new JLabel("VS", SwingConstants.CENTER);
+                vsPanel.setBackground(new Color(230, 230, 230));
+                vsLabel.setFont(new Font("Arial", Font.PLAIN, 20));
+                vsLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                vsLabel.setForeground(new Color(40, 40, 40));
+                vsPanel.setLayout(new BorderLayout());
 
                 if (time.contains("ago") && !isLive) {
-                    vsPanel.setText("<html><u>CLOSED</u></html>");
+                    vsLabel.setText("CLOSED");
                 } else if (time.contains("ago") && isLive) {
-                    vsPanel.setLabelForeground(new Color(50, 150, 50));
-                    vsPanel.setText("<html><u>LIVE</u></html>");
+                    vsLabel.setForeground(new Color(50, 150, 50));
+                    vsLabel.setText("LIVE");
+                    if (isLive) {
+                        vsLabel.setText("LIVE");
+                    }
                 }
-                vsPanels.add(vsPanel);
+                vsPanel.add(vsLabel, BorderLayout.CENTER);
+
 
                 JPanel timePanel = new JPanel();
                 JLabel timeLabel = new JLabel(time, SwingConstants.CENTER);
@@ -96,7 +101,27 @@ public class DrawPanel extends JPanel {
                 timeLabel.setFont(new Font("Arial", Font.PLAIN, 18));
                 timePanel.setLayout(new BorderLayout());
                 timePanel.add(timeLabel, BorderLayout.CENTER);
-                
+
+
+                // adds a MouseAdapter which listens for clicking on the vsLabel, so you get to the match page
+                final String matchURL = "http://csgolounge.com/" + fileName;
+                vsLabel.addMouseListener(new MouseAdapter() {
+                    public void mouseClicked(MouseEvent e) {
+                        if (e.getClickCount() > 0) {
+                            Desktop desktop = Desktop.getDesktop();
+                            try {
+                                URI uri = new URI(matchURL);
+                                desktop.browse(uri);
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            } catch (URISyntaxException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    }
+                });
+                vsLabel.setToolTipText(matchURL);
+
                 //adding everything with GridBagConstraints
                 c.fill = GridBagConstraints.BOTH;
                 c.weightx = 1;
@@ -118,23 +143,14 @@ public class DrawPanel extends JPanel {
                 c.weightx = 0;
                 add(timePanel, c);
             }
-        } catch(Exception ex) {
+        } catch(SocketTimeoutException ex) {
             ex.printStackTrace();
             JLabel errorLabel = new JLabel("Couldn't load matches !");
-            errorLabel.setFont(new Font("Arial", Font.PLAIN, 30));
             c.gridx = 0;
             c.gridy = 0;
             add(errorLabel, c);
-        }
-    	//set default vsLabel listeners to direct to csgolounge match page
-    	setLinks(0);
-    }
-    
-    public void setLinks(int option) {
-    	
-    	//removes all listeners from the labels
-        for(VsPanel panel : vsPanels) {
-        	panel.setLink(option);
+        } catch(Exception ex) {
+            ex.printStackTrace();
         }
     }
 }
